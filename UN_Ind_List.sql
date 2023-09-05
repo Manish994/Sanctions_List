@@ -40312,8 +40312,8 @@
 ';
 
 INSERT INTO Settings.Tbl_SanctionsList(NameOfIndividualorEntity, Reference, ListedOn, AdditionalInformation, Type,
-									   Aliases, LastDateUpdated, DateofBirth, PlaceofBirth, Comments, Citizenship,
-									   UNListType)
+									   Aliases, LastDateUpdated, DateofBirth, PlaceofBirth, ListingInformation,
+									   Citizenship, Committees, Address, ListType, Document)
 			SELECT ISNULL(
 				   CONCAT(
 				   ISNULL(x.value('(FIRST_NAME)[1]', 'NVARCHAR(MAX)'), ''),
@@ -40322,7 +40322,8 @@ INSERT INTO Settings.Tbl_SanctionsList(NameOfIndividualorEntity, Reference, List
 				   ' ',
 				   ISNULL(x.value('(THIRD_NAME)[1]', 'NVARCHAR(MAX)'), ''),
 				   ' ',
-				   ISNULL(x.value('(FOURTH_NAME)[1]', 'NVARCHAR(MAX)'), '')),
+				   ISNULL(x.value('(FOURTH_NAME)[1]', 'NVARCHAR(MAX)'), ''),
+				   ' '),
 				   '') AS NameOfIndividualorEntity,
 				   x.value('(REFERENCE_NUMBER)[1]', 'NVARCHAR(MAX)') AS Reference,
 				   x.value('(LISTED_ON)[1]', 'DATE') AS ListedOn,
@@ -40358,7 +40359,39 @@ INSERT INTO Settings.Tbl_SanctionsList(NameOfIndividualorEntity, Reference, List
 							'')
 				   ELSE NULL
 				   END AS PlaceofBirth,
-				   x.value('(COMMENTS1)[1]', 'NVARCHAR(MAX)') AS Comments,
+				   x.value('(COMMENTS1)[1]', 'NVARCHAR(MAX)') AS ListingInformation,
 				   x.value('(NATIONALITY/VALUE)[1]', 'NVARCHAR(500)') AS Citizenship,
-				   x.value('(UN_LIST_TYPE)[1]', 'NVARCHAR(500)') AS UNListType
+				   x.value('(UN_LIST_TYPE)[1]', 'NVARCHAR(500)') AS Committees,
+				   (SELECT STUFF(
+						   (SELECT ISNULL(x.value('(INDIVIDUAL_ADDRESS/NOTE)[1]', 'NVARCHAR(MAX)'), '') + ', '
+								   + ISNULL(x.value('(INDIVIDUAL_ADDRESS/STREET)[1]', 'NVARCHAR(MAX)'), '') + ' '
+								   + ', ' + ISNULL(x.value('(INDIVIDUAL_ADDRESS/CITY)[1]', 'NVARCHAR(MAX)'), '') + ' '
+								   + ' '
+								   + ISNULL(x.value('(INDIVIDUAL_ADDRESS/STATE_PROVINCE)[1]', 'NVARCHAR(MAX)'), '')
+								   + ', ' + ISNULL(x.value('(INDIVIDUAL_ADDRESS/COUNTRY)[1]', 'NVARCHAR(MAX)'), '')
+								   + ' '
+							FROM x.nodes('INDIVIDUAL_ADDRESS') AS T(addr)
+						   FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'),
+						   1,
+						   2,
+						   '') AS Address),
+				   'UN List' AS ListType,
+				   (SELECT STUFF(
+						   (SELECT CONCAT(
+								   ' ' + ' ' + x.value('(INDIVIDUAL_DOCUMENT/TYPE_OF_DOCUMENT)[1]', 'NVARCHAR(MAX)'),
+								   ' ',
+								   x.value('(INDIVIDUAL_DOCUMENT/NUMBER)[1]', 'NVARCHAR(MAX)'),
+								   ' ',
+								   x.value('(INDIVIDUAL_DOCUMENT/COUNTRY_OF_ISSUE)[1]', 'NVARCHAR(MAX)'),
+								   ' ',
+								   TRY_CONVERT(DATE, x.value('(INDIVIDUAL_DOCUMENT/DATE_OF_ISSUE)[1]', 'NVARCHAR(MAX)'), 23),
+								   ' ',
+								   x.value('(INDIVIDUAL_DOCUMENT/CITY_OF_ISSUE)[1]', 'NVARCHAR(MAX)'),
+								   ' ',
+								   x.value('(INDIVIDUAL_DOCUMENT/NOTE)[1]', 'NVARCHAR(MAX)'))
+							FROM x.nodes('INDIVIDUAL_DOCUMENT') AS T(doc)
+						   FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'),
+						   1,
+						   2,
+						   '') AS Document)
 			FROM @xmlData.nodes('/INDIVIDUALS/INDIVIDUAL') AS T(x);

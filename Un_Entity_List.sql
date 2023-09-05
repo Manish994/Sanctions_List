@@ -8553,7 +8553,7 @@
 
 
 INSERT INTO Settings.Tbl_SanctionsList(NameOfIndividualorEntity, Reference, ListedOn, Type, Aliases, LastDateUpdated,
-									   Comments, UNListType, Address)
+									   ListingInformation, Committees, Address, ListType)
 			SELECT X.entity.value('(FIRST_NAME/text())[1]', 'nvarchar(max)') AS NameOfIndividualorEntity,
 				   X.entity.value('(REFERENCE_NUMBER/text())[1]', 'nvarchar(max)') AS Reference,
 				   X.entity.value('(LISTED_ON/text())[1]', 'date') AS ListedOn,
@@ -8571,8 +8571,8 @@ INSERT INTO Settings.Tbl_SanctionsList(NameOfIndividualorEntity, Reference, List
 				   (SELECT TOP 1 LastUpdated.value('(text())[1]', 'datetime')
 					FROM X.entity.nodes('LAST_DAY_UPDATED/VALUE') AS L(LastUpdated)
 					ORDER BY LastUpdated.value('(text())[1]', 'datetime')) AS LastDateUpdated,
-				   X.entity.value('(COMMENTS1/text())[1]', 'nvarchar(max)') AS Comments,
-				   X.entity.value('(UN_LIST_TYPE/text())[1]', 'nvarchar(max)') AS UNListType,
+				   X.entity.value('(COMMENTS1/text())[1]', 'nvarchar(max)') AS ListingInformation,
+				   X.entity.value('(UN_LIST_TYPE/text())[1]', 'nvarchar(max)') AS Committees,
 				   (SELECT ISNULL(
 						   STUFF(
 						   (SELECT CASE WHEN Address.value('(STREET/text())[1]', 'nvarchar(max)') IS NOT NULL THEN
@@ -8592,5 +8592,6 @@ INSERT INTO Settings.Tbl_SanctionsList(NameOfIndividualorEntity, Reference, List
 						   1,
 						   2,
 						   ''),
-						   '') AS Address)
+						   '') AS Address),
+				   'UN List' AS ListType
 			FROM @xmlData.nodes('/ENTITIES/ENTITY') AS X(entity);
